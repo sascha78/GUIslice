@@ -6,11 +6,12 @@
 //
 
 #include "microsdl.h"
+#include <libgen.h>     // for path parsing 
 
 
 // Defines for resources
 #define FONT_DROID_SANS "/usr/share/fonts/truetype/droid/DroidSans.ttf"
-#define IMG_BKGND       "./res/bkgnd1_320x240.bmp"
+#define IMG_BKGND       "/res/bkgnd1_320x240.bmp"
 
 // Enumerations for pages, elements, fonts, images
 enum {E_PG_MAIN,E_PG_EXTRA};
@@ -29,14 +30,16 @@ microSDL_tsElem m_asElem[MAX_ELEM];
 microSDL_tsFont m_asFont[MAX_FONT];
 
 // Create the default elements on each page
-bool InitOverlays()
+bool InitOverlays(char *path)    // path to executable passed in to locate resource files
 {
   int               nElemId;
 
   // -----------------------------------
   // Background
-  microSDL_SetBkgndImage(&m_gui,(char*)IMG_BKGND);
-
+  char *img_bkgnd_path = (char*)malloc(strlen(path)+strlen(IMG_BKGND)+1);
+  strcpy(img_bkgnd_path, path);
+  strcat(img_bkgnd_path, IMG_BKGND);
+  microSDL_SetBkgndImage(&m_gui,img_bkgnd_path);
 
   // -----------------------------------
   // PAGE: MAIN
@@ -131,7 +134,7 @@ int main( int argc, char* args[] )
   // -----------------------------------
   // Create page elements
   // -----------------------------------
-  InitOverlays();
+  InitOverlays(dirname(args[0]));   // pass executable directory path to help find resources
 
 
   // -----------------------------------
