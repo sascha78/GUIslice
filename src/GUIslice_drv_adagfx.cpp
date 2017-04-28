@@ -539,9 +539,7 @@ void gslc_DrvDrawImgFromMem(gslc_tsGui* pGui,int16_t x, int16_t y, int8_t width,
  const unsigned char *bitmap,bool bProgMem)
  {
   // todo memcpy
-  const unsigned char*  bmap_base = bitmap;
-  int16_t         w,h;
-  
+ 
   uint16_t  pix_buffer[BUFF_SIZE];   // Pixel buffer (16 bits per pixel)
 
   // Work out the number whole buffers to send
@@ -550,9 +548,9 @@ void gslc_DrvDrawImgFromMem(gslc_tsGui* pGui,int16_t x, int16_t y, int8_t width,
   // Fill and send "nb" buffers to TFT
   for (int i = 0; i < nb; i++) {
     for (int j = 0; j < BUFF_SIZE; j++) {
-      pix_buffer[j] = pgm_read_word(&icon[i * BUFF_SIZE + j]);
+      pix_buffer[j] = pgm_read_word(&bitmap[i * BUFF_SIZE + j]);
     }
-    tft.pushColors(pix_buffer, BUFF_SIZE);
+    m_disp.pushColors(pix_buffer, BUFF_SIZE);
   }
 
   // Work out number of pixels not yet sent
@@ -560,38 +558,9 @@ void gslc_DrvDrawImgFromMem(gslc_tsGui* pGui,int16_t x, int16_t y, int8_t width,
 
   // Send any partial buffer left over
   if (np) {
-    for (int i = 0; i < np; i++) pix_buffer[i] = pgm_read_word(&icon[nb * BUFF_SIZE + i]);
-    tft.pushColors(pix_buffer, np);
+    for (int i = 0; i < np; i++) pix_buffer[i] = pgm_read_word(&bitmap[nb * BUFF_SIZE + i]);
+    m_disp.pushColors(pix_buffer, np);
   }
-  
-  // Read header
-  w       = ( (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++) ) << 8;
-  w      |= ( (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++) ) << 0;
-  h       = ( (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++) ) << 8;
-  h      |= ( (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++) ) << 0;
-  nCol.r  =   (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++);
-  nCol.g  =   (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++);
-  nCol.b  =   (bProgMem)? pgm_read_byte(bmap_base++) : *(bmap_base++);
-  bmap_base++;
-  
-  int16_t i, j, byteWidth = (w + 7) / 8;
-  uint8_t nByte;
-  
-  for(j=0; j<h; j++) {
-    for(i=0; i<w; i++) {
-      if(i & 7) nByte <<= 1;
-      else {
-        if (bProgMem) {
-          nByte = pgm_read_byte(bmap_base + j * byteWidth + i / 8);
-        } else {
-          nByte = bmap_base[j * byteWidth + i / 8];
-        }
-      }
-      if(nByte & 0x80) {
-        gslc_DrvDrawPoint(pGui,x+i,y+j,nCol);
-      }
-    }
-  }   
 }
 
 #if (ADAGFX_SD_EN)
@@ -778,7 +747,8 @@ bool gslc_DrvDrawImage(gslc_tsGui* pGui,int16_t nDstX,int16_t nDstY,gslc_tsImgRe
       gslc_DrvDrawMonoFromMem(pGui,nDstX,nDstY,sImgRef.pImgBuf,true);
       return true;      
     } else {
-      return false; // TODO: not yet supported
+      gslc_DrvDrawImgFromMem(pGui,nDstX,nDstY,32,32,sImgRef.pImgBuf,true)
+      return true; // TODO: not yet supported
     }
     
   } else if ((sImgRef.eImgFlags & GSLC_IMGREF_SRC) == GSLC_IMGREF_SRC_SD) {
